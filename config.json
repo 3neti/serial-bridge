@@ -1,5 +1,5 @@
 {
-  "android_port": "/dev/tty18",
+  "android_port": "/dev/ttyS1",
   "coin_port": "/dev/tty20",
   "card_port": "/dev/tty22",
   "baud_rate": 9600,
