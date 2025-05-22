@@ -206,7 +206,7 @@ def handle_coin_feedback(line: str, android, context: dict):
 def handle_card_feedback(line: str, android, context: dict):
     txn_id = context.get("last_transaction_id", "mock_txn")
     print("card handler",line)
-    if line.startswith("CARD_DISPENSED"):
+    if line.startswith("DISPENSED"):
         print("card handler/dispensed",line)
         parts = line.split("=")
         print("card handler/dispensed/parts",parts)
