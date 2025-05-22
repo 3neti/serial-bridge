@@ -145,6 +145,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
     elif function == "DispenseCard":
         print("📤 Android requested: Dispense SIM card")
         card.write(b"c\n")
+
     elif function == "EjectCard":
         print("📤 Android requested: Eject SIM card")
         card.write(b"d\n")
@@ -204,10 +205,13 @@ def handle_coin_feedback(line: str, android, context: dict):
 
 def handle_card_feedback(line: str, android, context: dict):
     txn_id = context.get("last_transaction_id", "mock_txn")
-
+    print("card handler",line)
     if line.startswith("CARD_DISPENSED"):
+        print("card handler/dispensed",line)
         parts = line.split("=")
+        print("card handler/dispensed/parts",parts)
         params = parts[1].split(',')
+        print("card handler/dispensed/parts",params)
         count = int(params[0])
         ccid = str(params[1])
         payload = {
