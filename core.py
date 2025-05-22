@@ -226,4 +226,43 @@ def handle_coin_feedback(line: str, android, context: dict):
         sign_and_send_to_android(payload, android)
 
     else:
-        print(f"🔕 Unrecognized controller feedback: {line}")
+        print(f"🔕 Unrecognized coin feedback: {line}")
+
+
+
+def handle_card_feedback(line: str, android, context: dict):
+    txn_id = context.get("last_transaction_id", "mock_txn")
+
+    if line.startswith("CARD_DISPENSED"):
+        parts = line.split("=")
+        params = parts[1].split(',')
+        count = int(params[0])
+        ccid = str(params[1])
+        payload = {
+            "deviceTransactionId": "card_dispense_notice_001",
+            "responseTime": "20250423131002",
+            "resultCode": "200",
+            "resultMessage": "Card dispensed",
+            "data": {
+                "businessProcessId": "mock_process_001",
+                "iccid": ccid,
+                "totalDispensedAmount": count
+            }
+        }
+        sign_and_send_to_android(payload, android)
+
+    elif line.startswith("LOW_STOCK"):
+        quantity = line.split("=")[1]
+        payload = {
+            "deviceTransactionId": "low_stock_alert_001",
+            "responseTime": "20250423131010",
+            "resultCode": "200",
+            "resultMessage": "Low stock detected",
+            "data": {
+                "simQuantity": int(quantity)
+            }
+        }
+        sign_and_send_to_android(payload, android)
+
+    else:
+        print(f"🔕 Unrecognized coin feedback: {line}")

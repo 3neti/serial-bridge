@@ -3,6 +3,7 @@ from core import (
     sign_and_send_to_android,
     handle_verified_android_command,
     handle_coin_feedback,
+    handle_card_feedback,
     load_config
 )
 
@@ -38,8 +39,20 @@ def listen_to_coin():
         except Exception as e:
             print(f"⚠️ Coin read error: {e}")
 
+
+def listen_to_card():
+    while True:
+        try:
+            line = card.readline().decode().strip()
+            if line:
+                print(f"🎯 Card says: {line}")
+                handle_card_feedback(line, android, context)
+        except Exception as e:
+            print(f"⚠️ Card read error: {e}")
+
 def main():
     threading.Thread(target=listen_to_coin, daemon=True).start()
+    threading.Thread(target=listen_to_card, daemon=True).start()
 
     try:
         while True:
