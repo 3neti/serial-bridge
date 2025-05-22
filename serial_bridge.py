@@ -56,7 +56,7 @@ def main():
 
     try:
         while True:
-            line = android.readline().decode().strip()
+            line = android.readline().decode('utf-8', errors='ignore').strip()
             if not line:
                 continue
 
