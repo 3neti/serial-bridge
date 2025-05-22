@@ -1,6 +1,6 @@
 {
-  "android_port": "/dev/ttys009",
-  "controller_port": "/dev/ttys012",
-  "baud_rate": 115200,
+  "android_port": "/dev/tty18",
+  "controller_port": "/dev/tty21",
+  "baud_rate": 9600,
   "device_id": "DEVICE_SerialBridge_001"
 }
