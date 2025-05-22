@@ -168,7 +168,9 @@ def handle_coin_feedback(line: str, android, context: dict):
 
     elif line.startswith("CARD_DISPENSED"):
         parts = line.split("=")
-        count = int(parts[1]) if len(parts) > 1 else 1
+        params = parts[1].split(',')
+        count = int(params[0])
+        ccid = str(params[1])
         payload = {
             "deviceTransactionId": "card_dispense_notice_001",
             "responseTime": "20250423131002",
@@ -176,7 +178,7 @@ def handle_coin_feedback(line: str, android, context: dict):
             "resultMessage": "Card dispensed",
             "data": {
                 "businessProcessId": "mock_process_001",
-                "iccid": "8991234567890123456",
+                "iccid": ccid,
                 "totalDispensedAmount": count
             }
         }
