@@ -39,7 +39,7 @@ def sign_and_send_to_android(payload: dict, android):
     android.write(combined.encode())
     print("📤 Sent encrypted response to Android.")
 
-def handle_verified_android_command(payload: dict, controller, android, context: dict):
+def handle_verified_android_command(payload: dict, coin, card, android, context: dict):
     context["last_transaction_id"] = payload.get("transactionId")
     function = payload.get("function")
     params = payload.get("params", {})
@@ -90,7 +90,7 @@ def handle_verified_android_command(payload: dict, controller, android, context:
         print("📦 Android requested: PrepareCards")
         quantity = params.get("quantity", 1)
         auto_recycle = params.get("autoRecycleTime", 300)
-        controller.write(f"PREPARE_CARDS={quantity},{auto_recycle}\n".encode())
+        card.write(f"PREPARE_CARDS={quantity},{auto_recycle}\n".encode())
 
         response = {
             "transactionId": context["last_transaction_id"],
@@ -136,20 +136,20 @@ def handle_verified_android_command(payload: dict, controller, android, context:
 
     elif function == "ActivateCashModule":
         print("💰 Android requested: Start coin acceptor")
-        controller.write(b"COIN_ACCEPT=1\n")
+        coin.write(b"COIN_ACCEPT=1\n")
 
     elif function == "DeactivateCashModule":
         print("🛑 Android requested: Stop coin acceptor")
-        controller.write(b"COIN_ACCEPT=0\n")
+        coin.write(b"COIN_ACCEPT=0\n")
 
     elif function == "DispenseCard":
         print("📤 Android requested: Dispense SIM card")
-        controller.write(b"CARD_DISPENSE=1\n")
+        coin.write(b"CARD_DISPENSE=1\n")
 
     else:
         print(f"❓ Unknown Android command: {function}")
 
-def handle_controller_feedback(line: str, android, context: dict):
+def handle_coin_feedback(line: str, android, context: dict):
     txn_id = context.get("last_transaction_id", "mock_txn")
 
     if line.startswith("COIN_VALUE"):
