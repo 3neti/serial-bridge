@@ -32,7 +32,7 @@ context = {"last_transaction_id": None}
 def listen_to_coin():
     while True:
         try:
-            line = coin.readline().decode().strip()
+            line = coin.readline().decode('utf-8', errors='ignore').strip()
             if line:
                 print(f"🎯 Coin says: {line}")
                 handle_coin_feedback(line, android, context)
@@ -43,7 +43,7 @@ def listen_to_coin():
 def listen_to_card():
     while True:
         try:
-            line = card.readline().decode().strip()
+            line = card.readline().decode('utf-8', errors='ignore').strip()
             if line:
                 print(f"🎯 Card says: {line}")
                 handle_card_feedback(line, android, context)
