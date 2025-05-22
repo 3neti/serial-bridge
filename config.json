@@ -2,6 +2,6 @@
   "android_port": "/dev/ttyS1",
   "coin_port": "/dev/tty20",
   "card_port": "/dev/tty22",
-  "baud_rate": 9600,
+  "baud_rate": 115200,
   "device_id": "DEVICE_SerialBridge_001"
 }
