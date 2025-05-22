@@ -145,6 +145,9 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
     elif function == "DispenseCard":
         print("📤 Android requested: Dispense SIM card")
         card.write(b"c\n")
+    elif function == "EjectCard":
+        print("📤 Android requested: Eject SIM card")
+        card.write(b"d\n")
 
     else:
         print(f"❓ Unknown Android command: {function}")
