@@ -134,6 +134,11 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         }
         sign_and_send_to_android(response, android)
 
+    elif function == "RetrieveDeviceID":
+        print("💰 Android requested: RetrieveDeviceID")
+        response = {"transactionId":context["last_transaction_id"],"resultCode":"200","resultMessage":"Success","responseTime":"20250410100113","data":{"retrieveDeviceId":"DEVICE_Simulated_001","phoneNumber":"+1234567890","ipAddress":"192.168.1.100","deviceMac":"00:1A:2B:3C:4D:5E"}}
+        sign_and_send_to_android(response, android)
+
     elif function == "ActivateCashModule":
         print("💰 Android requested: Start coin acceptor")
         coin.write(b"COIN_ACCEPT=1\n")
