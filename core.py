@@ -1,10 +1,13 @@
 import json
 import base64
+from datetime import datetime
 from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import BadSignatureError
 
 ANDROID_PUBLIC_KEY = "d21f8aaa37aa3b399843196ea62f48490092cb0a7a3a0f49ac17fdefbe311a0d"
 DEVICE_PRIVATE_KEY = "f58e5fd0bf4dd506d9cefa35a37dc557b2376abdd0e7b72a9904513d7310424f"
+
+total_coin = 0
 
 verify_key = VerifyKey(bytes.fromhex(ANDROID_PUBLIC_KEY))
 signing_key = SigningKey(bytes.fromhex(DEVICE_PRIVATE_KEY))
@@ -16,16 +19,21 @@ def load_config(path="config.json") -> dict:
 def pad_b64(s: str) -> str:
     return s + "=" * ((4 - len(s) % 4) % 4)
 
+def get_timestamp():
+    return datetime.now().strftime("%Y%m%d%H%M%S")
+
 def verify_and_parse(message: str):
     try:
         if "." not in message:
             raise ValueError("Missing delimiter between payload and signature.")
+        
         b64_payload, b64_signature = message.strip().split(".")
         payload_bytes = base64.b64decode(pad_b64(b64_payload))
         signature_bytes = base64.b64decode(pad_b64(b64_signature))
         verify_key.verify(payload_bytes, signature_bytes)
         print("✅ Signature verified from Android.")
-        return json.loads(payload_bytes.decode())
+
+        return json.loads(message)
     except (ValueError, BadSignatureError, base64.binascii.Error) as e:
         print(f"❌ Signature verification failed: {e}")
         return None
@@ -40,6 +48,7 @@ def sign_and_send_to_android(payload: dict, android):
     print("📤 Sent encrypted response to Android.")
 
 def handle_verified_android_command(payload: dict, coin, card, android, context: dict):
+    global total_coin
     context["last_transaction_id"] = payload.get("transactionId")
     function = payload.get("function")
     params = payload.get("params", {})
@@ -48,7 +57,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         print("🔎 Android requested: RetrieveDeviceID")
         response = {
             "transactionId": context["last_transaction_id"],
-            "responseTime": "20250423130000",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Device identity retrieved.",
             "data": {
@@ -64,7 +73,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         print("🧰 Android requested: InitializeDevice")
         response = {
             "transactionId": context["last_transaction_id"],
-            "responseTime": "20250423130001",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Initialization successful.",
             "data": {
@@ -94,7 +103,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
 
         response = {
             "transactionId": context["last_transaction_id"],
-            "responseTime": "20250423130002",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Cards prepared",
             "data": {
@@ -110,7 +119,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         quantity = 5 if is_alarm == "Y" else None
         response = {
             "transactionId": context["last_transaction_id"],
-            "responseTime": "20250423130003",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Card quantity checked",
             "data": {
@@ -124,7 +133,7 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         print("💰 Android requested: GetMoneyAmount")
         response = {
             "transactionId": context["last_transaction_id"],
-            "responseTime": "20250423130004",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Amount retrieved",
             "data": {
@@ -140,10 +149,14 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
         sign_and_send_to_android(response, android)
 
     elif function == "ActivateCashModule":
+        total_coin = 0
         print("💰 Android requested: Start coin acceptor")
         coin.write(b"COIN_ACCEPT=1\n")
+        response = {"transactionId":context["last_transaction_id"],"responseTime":"20250410100115","resultCode":"200","data":{"transactionId":"ActivateCashModule_374a315b_20250410100114_62196579","businessProcessId":"374a315b","deviceBusinessId":"CASH_001"}}
+        sign_and_send_to_android(response, android)
 
     elif function == "DeactivateCashModule":
+        total_coin = 0
         print("🛑 Android requested: Stop coin acceptor")
         coin.write(b"COIN_ACCEPT=0\n")
 
@@ -158,28 +171,39 @@ def handle_verified_android_command(payload: dict, coin, card, android, context:
     else:
         print(f"❓ Unknown Android command: {function}")
 
-def handle_coin_feedback(line: str, android, context: dict):
-    txn_id = context.get("last_transaction_id", "mock_txn")
 
+
+def handle_coin_feedback(line: str, android, context: dict):
+    global total_coin
+    txn_id = context.get("last_transaction_id", "mock_txn")
     if line.startswith("COIN_VALUE"):
-        amount = line.split("=")[1]
+        par = line.split("=")
+        amount = par[1].replace('COIN_VALUE', '')
+        total_coin += int(amount)
         payload = {
-            "deviceTransactionId": txn_id,
-            "responseTime": "20250423131000",
+            "deviceTransactionId": "Coin update",
+            "responseTime": get_timestamp(),
+            "requestTime": "20250423131000", # TODO: Get from request
             "resultCode": "200",
             "resultMessage": "Coin inserted",
-            "data": {
+            'retrieveDeviceId': 'DEVICE_001',
+            'function': 'UpdateCashReceived',
+            "params": {
                 "businessProcessId": "mock_process_001",
-                "receivedTotalAmount": amount
+                'chargeTotalAmount': '99.0',
+                "receivedTotalAmount": str(total_coin),
+                "currentReceivedAmount": amount + '.0',
+                'isClosed': 'N'
             }
         }
+        print(payload)
         sign_and_send_to_android(payload, android)
 
     elif line.startswith("CASH_BOX_REMOVED"):
         total_amount = line.split("=")[1]
         payload = {
             "deviceTransactionId": "cashbox_takeaway_001",
-            "responseTime": "20250423131020",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Cash box opened manually",
             "data": {
@@ -192,7 +216,7 @@ def handle_coin_feedback(line: str, android, context: dict):
         amount = line.split("=")[1]
         payload = {
             "deviceTransactionId": "refund_triggered_001",
-            "responseTime": "20250423131030",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Refund initiated",
             "data": {
@@ -209,6 +233,7 @@ def handle_coin_feedback(line: str, android, context: dict):
 
 
 def handle_card_feedback(line: str, android, context: dict):
+
     txn_id = context.get("last_transaction_id", "mock_txn")
     print("card handler",line)
     if line.startswith("DISPENSED"):
@@ -221,7 +246,7 @@ def handle_card_feedback(line: str, android, context: dict):
         ccid = str(params[1])
         payload = {
             "deviceTransactionId": "card_dispense_notice_001",
-            "responseTime": "20250423131002",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Card dispensed",
             "data": {
@@ -236,7 +261,7 @@ def handle_card_feedback(line: str, android, context: dict):
         quantity = line.split("=")[1]
         payload = {
             "deviceTransactionId": "low_stock_alert_001",
-            "responseTime": "20250423131010",
+            "responseTime": get_timestamp(),
             "resultCode": "200",
             "resultMessage": "Low stock detected",
             "data": {
